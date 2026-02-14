@@ -20,7 +20,7 @@ public interface CGMistakeAnnouncerConfig extends Config
 	@ConfigItem(
 		keyName = "mistakeMessages",
 		name = "Mistake Messages",
-		description = "Comma-separated list of messages shown when a mistake is detected"
+		description = "Comma-separated list of messages shown when a mistake is detected. Do not use commas within individual messages."
 	)
 	default String mistakeMessages()
 	{

@@ -163,14 +163,14 @@ public class CGMistakeAnnouncerPlugin extends Plugin
 			return;
 		}
 
+		boolean mistakeDetected = false;
+
 		// Check if we could have avoided this damage with the correct prayer
 		if (config.trackPrayerMisses() && lastBossAttack != AttackStyle.UNKNOWN)
 		{
 			boolean hasMeleePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MELEE);
 			boolean hasRangePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MISSILES);
 			boolean hasMagePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MAGIC);
-
-			boolean mistakeDetected = false;
 
 			if (lastBossAttack == AttackStyle.MELEE && !hasMeleePrayer)
 			{
@@ -184,16 +184,40 @@ public class CGMistakeAnnouncerPlugin extends Plugin
 			{
 				mistakeDetected = true;
 			}
+		}
+		else if (config.trackDamage() && lastBossAttack != AttackStyle.UNKNOWN)
+		{
+			// Track damage only if trackPrayerMisses is disabled
+			// This avoids duplicate announcements
+			boolean hasMeleePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MELEE);
+			boolean hasRangePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MISSILES);
+			boolean hasMagePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MAGIC);
 
-			if (mistakeDetected)
+			// Only announce if damage was taken with the correct prayer active (unavoidable)
+			// or if we can't determine if prayer was correct
+			boolean hasCorrectPrayer = false;
+			if (lastBossAttack == AttackStyle.MELEE && hasMeleePrayer)
 			{
-				announceLocalMistake(localPlayer);
+				hasCorrectPrayer = true;
+			}
+			else if (lastBossAttack == AttackStyle.RANGED && hasRangePrayer)
+			{
+				hasCorrectPrayer = true;
+			}
+			else if (lastBossAttack == AttackStyle.MAGIC && hasMagePrayer)
+			{
+				hasCorrectPrayer = true;
+			}
+
+			// Only track as mistake if correct prayer was NOT active
+			if (!hasCorrectPrayer)
+			{
+				mistakeDetected = true;
 			}
 		}
-		else if (config.trackDamage() && damage > 0)
+
+		if (mistakeDetected)
 		{
-			// For now, any damage could be considered avoidable
-			// This can be refined to exclude unavoidable damage types
 			announceLocalMistake(localPlayer);
 		}
 	}
@@ -208,7 +232,25 @@ public class CGMistakeAnnouncerPlugin extends Plugin
 
 		// Split by comma and pick one at random
 		String[] messages = messagesConfig.split("\\s*,\\s*");
-		String message = messages[random.nextInt(messages.length)];
+		
+		// Filter out any empty strings
+		String[] validMessages = new String[messages.length];
+		int validCount = 0;
+		for (String msg : messages)
+		{
+			if (msg != null && !msg.trim().isEmpty())
+			{
+				validMessages[validCount++] = msg.trim();
+			}
+		}
+		
+		// If no valid messages, return
+		if (validCount == 0)
+		{
+			return;
+		}
+		
+		String message = validMessages[random.nextInt(validCount)];
 
 		// Display overhead text
 		if (config.showOverheadText())
