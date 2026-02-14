@@ -163,63 +163,40 @@ public class CGMistakeAnnouncerPlugin extends Plugin
 			return;
 		}
 
-		boolean mistakeDetected = false;
-
-		// Check if we could have avoided this damage with the correct prayer
-		if (config.trackPrayerMisses() && lastBossAttack != AttackStyle.UNKNOWN)
+		// Check if either tracking option is enabled
+		if (!config.trackPrayerMisses() && !config.trackDamage())
 		{
-			boolean hasMeleePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MELEE);
-			boolean hasRangePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MISSILES);
-			boolean hasMagePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MAGIC);
-
-			if (lastBossAttack == AttackStyle.MELEE && !hasMeleePrayer)
-			{
-				mistakeDetected = true;
-			}
-			else if (lastBossAttack == AttackStyle.RANGED && !hasRangePrayer)
-			{
-				mistakeDetected = true;
-			}
-			else if (lastBossAttack == AttackStyle.MAGIC && !hasMagePrayer)
-			{
-				mistakeDetected = true;
-			}
-		}
-		else if (config.trackDamage() && lastBossAttack != AttackStyle.UNKNOWN)
-		{
-			// Track damage only if trackPrayerMisses is disabled
-			// This avoids duplicate announcements
-			boolean hasMeleePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MELEE);
-			boolean hasRangePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MISSILES);
-			boolean hasMagePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MAGIC);
-
-			// Only announce if damage was taken with the correct prayer active (unavoidable)
-			// or if we can't determine if prayer was correct
-			boolean hasCorrectPrayer = false;
-			if (lastBossAttack == AttackStyle.MELEE && hasMeleePrayer)
-			{
-				hasCorrectPrayer = true;
-			}
-			else if (lastBossAttack == AttackStyle.RANGED && hasRangePrayer)
-			{
-				hasCorrectPrayer = true;
-			}
-			else if (lastBossAttack == AttackStyle.MAGIC && hasMagePrayer)
-			{
-				hasCorrectPrayer = true;
-			}
-
-			// Only track as mistake if correct prayer was NOT active
-			if (!hasCorrectPrayer)
-			{
-				mistakeDetected = true;
-			}
+			return;
 		}
 
-		if (mistakeDetected)
+		// Check if this was a prayer mistake
+		if (lastBossAttack != AttackStyle.UNKNOWN && isPrayerMistake())
 		{
 			announceLocalMistake(localPlayer);
 		}
+	}
+
+	private boolean isPrayerMistake()
+	{
+		boolean hasMeleePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MELEE);
+		boolean hasRangePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MISSILES);
+		boolean hasMagePrayer = client.isPrayerActive(Prayer.PROTECT_FROM_MAGIC);
+
+		// Check if the player has the wrong prayer active for the boss attack
+		if (lastBossAttack == AttackStyle.MELEE && !hasMeleePrayer)
+		{
+			return true;
+		}
+		else if (lastBossAttack == AttackStyle.RANGED && !hasRangePrayer)
+		{
+			return true;
+		}
+		else if (lastBossAttack == AttackStyle.MAGIC && !hasMagePrayer)
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	private void announceLocalMistake(Player player)
@@ -230,27 +207,25 @@ public class CGMistakeAnnouncerPlugin extends Plugin
 			return;
 		}
 
-		// Split by comma and pick one at random
+		// Split by comma and filter out empty strings
 		String[] messages = messagesConfig.split("\\s*,\\s*");
+		java.util.List<String> validMessages = new java.util.ArrayList<>();
 		
-		// Filter out any empty strings
-		String[] validMessages = new String[messages.length];
-		int validCount = 0;
 		for (String msg : messages)
 		{
 			if (msg != null && !msg.trim().isEmpty())
 			{
-				validMessages[validCount++] = msg.trim();
+				validMessages.add(msg.trim());
 			}
 		}
 		
 		// If no valid messages, return
-		if (validCount == 0)
+		if (validMessages.isEmpty())
 		{
 			return;
 		}
 		
-		String message = validMessages[random.nextInt(validCount)];
+		String message = validMessages.get(random.nextInt(validMessages.size()));
 
 		// Display overhead text
 		if (config.showOverheadText())

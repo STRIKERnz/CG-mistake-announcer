@@ -50,7 +50,7 @@ public interface CGMistakeAnnouncerConfig extends Config
 	@ConfigItem(
 		keyName = "trackPrayerMisses",
 		name = "Track Prayer Misses",
-		description = "Announce when you take damage without the correct prayer active"
+		description = "Announce when you take damage without the correct prayer active (same as Track Avoidable Damage)"
 	)
 	default boolean trackPrayerMisses()
 	{
@@ -60,7 +60,7 @@ public interface CGMistakeAnnouncerConfig extends Config
 	@ConfigItem(
 		keyName = "trackDamage",
 		name = "Track Avoidable Damage",
-		description = "Announce when you take damage that could have been avoided"
+		description = "Announce when you take damage without the correct prayer active (same as Track Prayer Misses)"
 	)
 	default boolean trackDamage()
 	{
